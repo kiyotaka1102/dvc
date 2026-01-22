@@ -4,57 +4,73 @@ on:
   push:
     branches: [ "main" ]
     paths:
-      - 'Churn_Modelling.txt.dvc' 
-      - 'churn_pipeline.skops.dvc'
-      - 'evaluate_only.py'         
-      - 'requirements.txt'        
+      - '**.dvc'            
+      - 'evaluate_only.py'
   pull_request:
     branches: [ "main" ]
     paths:
-      - '**.dvc'                  
+      - '**.dvc'
       - 'evaluate_only.py'
+
 permissions: write-all
 
 jobs:
   evaluate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      
-      - uses: iterative/setup-cml@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v3
 
-      - name: Install dependencies
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Setup CML
+        uses: iterative/setup-cml@v2
+
+      - name: Setup DVC
+        uses: iterative/setup-dvc@v1
+
+      - name: Install Dependencies
         run: |
           pip install -r requirements.txt
-          # Nếu bạn chưa dùng DVC online, đảm bảo file data/model có trong repo
-          # hoặc dùng tập dữ liệu nhỏ để test logic
+          pip install "dvc[gs]" # Cần cài thêm thư viện hỗ trợ GCS
 
+      - name: Pull Data from GCS
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          # Tạo file credential tạm thời cho máy ảo GitHub
+          echo "$GCP_SA_KEY" > credentials.json
+          dvc remote modify gcs-remote --local credentialpath credentials.json
+          dvc pull
+      # - name: Pull Data from Google Drive
+      #   env:
+      #     GDRIVE_CREDENTIALS_DATA: ${{ secrets.GDRIVE_CREDENTIALS_DATA }}
+      #   run: |
+      #     # Tạo file cấu hình xác thực từ Secret
+      #     mkdir -p .dvc/tmp
+      #     echo "$GDRIVE_CREDENTIALS_DATA" > .dvc/tmp/gdrive-user-credentials.json
+          
+      #     # DVC tự động dùng file này để pull data
+      #     dvc pull
       - name: Run Evaluation
         run: |
-          # Chạy script evaluation của bạn
-          # Script này phải tạo ra: metrics.txt, model_results.png, roc_curve.png
-          python train.py 
-
-      - name: Run Evaluation Only
-        run: |
-          # Bước này giả định model và data đã có sẵn (qua dvc pull hoặc git push)
           python evaluate_only.py 
 
       - name: Create CML Report
         env:
           REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "## 📊 Model Performance Report" > report.md
-          echo "Kết quả đánh giá dựa trên phiên bản mô hình mới nhất." >> report.md
-          
-          echo "### 📈 Key Metrics" >> report.md
+          echo "## 📊 Kết quả đánh giá tự động (GCS Pipeline)" > report.md
+          echo "### 🔄 Metrics" >> report.md
+          echo "\`\`\`" >> report.md
           cat metrics.txt >> report.md
+          echo "\`\`\`" >> report.md
           
-          echo "### 🖼️ Visualizations" >> report.md
-          echo "#### Confusion Matrix" >> report.md
+          echo "### 📈 Visualizations" >> report.md
           cml publish model_results.png --md >> report.md
-          
-          echo "#### ROC Curve" >> report.md
           cml publish roc_curve.png --md >> report.md
           
           cml send-comment report.md

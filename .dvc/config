@@ -1,4 +1,5 @@
 [core]
-    remote = mylocal
-['remote "mylocal"']
-    url = D:/DVC_Storage
+    remote = gcs-remote
+['remote "gcs-remote"']
+    url = gs://abc_ai/datasets/temp/test
+    credentialpath = D:\CTY\dvc\huy-nota-serviceaccount.json
