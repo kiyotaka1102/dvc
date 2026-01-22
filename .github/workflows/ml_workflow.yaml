@@ -1,0 +1,53 @@
+name: ML Workflow
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions: write-all
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: iterative/setup-cml@v2
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          # Nếu bạn chưa dùng DVC online, đảm bảo file data/model có trong repo
+          # hoặc dùng tập dữ liệu nhỏ để test logic
+
+      - name: Run Evaluation
+        run: |
+          # Chạy script evaluation của bạn
+          # Script này phải tạo ra: metrics.txt, model_results.png, roc_curve.png
+          python train.py 
+
+      - name: Run Evaluation Only
+        run: |
+          # Bước này giả định model và data đã có sẵn (qua dvc pull hoặc git push)
+          python evaluate_only.py 
+
+      - name: Create CML Report
+        env:
+          REPO_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "## 📊 Model Performance Report" > report.md
+          echo "Kết quả đánh giá dựa trên phiên bản mô hình mới nhất." >> report.md
+          
+          echo "### 📈 Key Metrics" >> report.md
+          cat metrics.txt >> report.md
+          
+          echo "### 🖼️ Visualizations" >> report.md
+          echo "#### Confusion Matrix" >> report.md
+          cml publish model_results.png --md >> report.md
+          
+          echo "#### ROC Curve" >> report.md
+          cml publish roc_curve.png --md >> report.md
+          
+          cml send-comment report.md
