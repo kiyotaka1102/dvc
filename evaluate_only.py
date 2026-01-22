@@ -9,6 +9,7 @@ if __name__ == "__main__":
     # 2. Load model đã có 
     print("Loading pre-trained model...")
     
+    
     untrusted_types = sio.get_untrusted_types(file=pipeline_file)
     
     trained_model = sio.load(pipeline_file, trusted=untrusted_types)
