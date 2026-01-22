@@ -1,0 +1,5 @@
+outs:
+- md5: c123a9e0f61be435e497956db94be840
+  size: 4223817
+  hash: md5
+  path: churn_pipeline.skops
