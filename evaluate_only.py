@@ -1,14 +1,17 @@
 import skops.io as sio
 import pandas as pd
-from train import ChurnModelPipeline # Import class từ file train
+from train import ChurnModelPipeline 
 
 if __name__ == "__main__":
     pipeline_file = "churn_pipeline.skops"
-    data_file = "Churn_Modelling.txt"
+    data_file = "Churn_Modelling.txt" 
     
-    # 2. Load model đã có
+    # 2. Load model đã có 
     print("Loading pre-trained model...")
-    trained_model = sio.load(pipeline_file, trusted=True)
+    
+    untrusted_types = sio.get_untrusted_types(file=pipeline_file)
+    
+    trained_model = sio.load(pipeline_file, trusted=untrusted_types)
     
     # 3. Load data mới để đánh giá
     obj = ChurnModelPipeline(data_file, "Exited")
