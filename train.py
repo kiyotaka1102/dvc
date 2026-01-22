@@ -48,6 +48,8 @@ class ChurnModelPipeline:
         categorical_transformer = Pipeline(
             steps=[("imputer", SimpleImputer(strategy="most_frequent")), ("encoder", OrdinalEncoder())]
         )
+
+        
         self.preprocessor = ColumnTransformer(
             transformers=[
                 ("num", numerical_transformer, num_cols),
