@@ -3,9 +3,16 @@ name: ML Workflow
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'Churn_Modelling.txt.dvc' 
+      - 'churn_pipeline.skops.dvc'
+      - 'evaluate_only.py'         
+      - 'requirements.txt'        
   pull_request:
     branches: [ "main" ]
-
+    paths:
+      - '**.dvc'                  
+      - 'evaluate_only.py'
 permissions: write-all
 
 jobs:
